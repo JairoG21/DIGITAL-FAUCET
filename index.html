@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cloudflare.com"></script>
+    <style> body { margin: 0; overflow: hidden; background: #050505; } </style>
+</head>
+<body>
+<script>
+    let t = 0;
+    function setup() {
+        createCanvas(windowWidth, windowHeight);
+        strokeWeight(2);
+        noFill();
+    }
+    function draw() {
+        background(5, 20); // Creates a trailing blur effect
+        translate(width / 2, height / 2);
+        
+        // Visual variables driven entirely by the agent's evolved DNA
+        let numLines = 126;
+        let speedMultiplier = 0.0368573055666855;
+        let baseHue = 179;
+
+        for (let i = 0; i < numLines; i++) {
+            let angle = i * 0.1 + t * speedMultiplier;
+            let radius = sin(angle) * (width * 0.3) + (i * 0.5);
+            let x = cos(angle) * radius;
+            let y = sin(angle) * radius;
+            
+            // Shifting colors dynamically based on DNA
+            stroke((baseHue + i) % 360, 80, 90);
+            ellipse(x, y, 10 + (i * 0.2));
+        }
+        t += 1;
+    }
+    function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+</script>
+</body>
+</html>
