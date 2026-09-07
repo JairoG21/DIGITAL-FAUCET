@@ -1,39 +1,174 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cloudflare.com"></script>
-    <style> body { margin: 0; overflow: hidden; background: #050505; } </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/2.3.2/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #07070a;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 300px);
+            gap: 25px;
+            justify-content: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .art-card {
+            background: #111116;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #22222a;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            width: 300px;
+        }
+        .canvas-container {
+            width: 300px;
+            height: 300px;
+            background: #050505;
+        }
+        .info-panel {
+            padding: 16px;
+            font-size: 13px;
+            border-top: 1px solid #22222a;
+            background: #14141c;
+            color: #999;
+        }
+        .gen-title {
+            font-weight: 700;
+            color: #fff;
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .badge {
+            background: #2a2a3a;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
 </head>
 <body>
-<script>
-    let t = 0;
-    function setup() {
-        createCanvas(windowWidth, windowHeight);
-        strokeWeight(2);
-        noFill();
-    }
-    function draw() {
-        background(5, 20); // Creates a trailing blur effect
-        translate(width / 2, height / 2);
-        
-        // Visual variables driven entirely by the agent's evolved DNA
-        let numLines = 145;
-        let speedMultiplier = 0.03566094959047463;
-        let baseHue = 173;
 
-        for (let i = 0; i < numLines; i++) {
-            let angle = i * 0.1 + t * speedMultiplier;
-            let radius = sin(angle) * (width * 0.3) + (i * 0.5);
-            let x = cos(angle) * radius;
-            let y = sin(angle) * radius;
+    <h1>🧬 Evolving Agentic Art Museum</h1>
+    <div class="subtitle">Run python agent.py to birth a completely unpredictable new generation</div>
+    <div class="grid-container" id="gallery"></div>
+
+<script>
+    const artHistory = [{"id": 1, "particle_count": 53, "speed": 0.0449, "hue_start": 109, "style": "hypnotic_star", "color_mode": "rainbow", "saturation": 89, "date": "2026-09-06 22:22"}, {"id": 2, "particle_count": 61, "speed": 0.0564, "hue_start": 199, "style": "hypnotic_star", "color_mode": "monochrome", "saturation": 98, "date": "2026-09-06 22:22"}, {"id": 3, "particle_count": 145, "speed": 0.0263, "hue_start": 47, "style": "spiral", "color_mode": "neon_pulse", "saturation": 76, "date": "2026-09-06 22:22"}, {"id": 4, "particle_count": 58, "speed": 0.0316, "hue_start": 77, "style": "cosmic_ring", "color_mode": "neon_pulse", "saturation": 85, "date": "2026-09-06 22:23"}, {"id": 5, "particle_count": 159, "speed": 0.0128, "hue_start": 332, "style": "hypnotic_star", "color_mode": "duotone", "saturation": 84, "date": "2026-09-06 22:23"}, {"id": 6, "particle_count": 165, "speed": 0.0219, "hue_start": 33, "style": "spiral", "color_mode": "duotone", "saturation": 75, "date": "2026-09-06 22:23"}, {"id": 7, "particle_count": 79, "speed": 0.0416, "hue_start": 127, "style": "spiral", "color_mode": "neon_pulse", "saturation": 92, "date": "2026-09-06 22:23"}, {"id": 8, "particle_count": 111, "speed": 0.0315, "hue_start": 202, "style": "spiral", "color_mode": "rainbow", "saturation": 71, "date": "2026-09-06 22:23"}, {"id": 9, "particle_count": 140, "speed": 0.0453, "hue_start": 289, "style": "waves", "color_mode": "neon_pulse", "saturation": 79, "date": "2026-09-06 22:23"}];
+
+    const createArtSketch = (genes) => {
+        return function(p) {
+            let t = 0;
             
-            // Shifting colors dynamically based on DNA
-            stroke((baseHue + i) % 360, 80, 90);
-            ellipse(x, y, 10 + (i * 0.2));
-        }
-        t += 1;
-    }
-    function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+            p.setup = function() {
+                // Explicit sizes remove layout load failures entirely
+                p.createCanvas(300, 300);
+                p.strokeWeight(1.5);
+                p.noFill();
+                p.colorMode("HSB", 360, 100, 100, 100);
+            };
+
+            p.draw = function() {
+                p.background(7, 7, 10, 12);
+                p.translate(150, 150); // Direct center of 300x300
+
+                let numLines = genes.particle_count;
+                let speedMultiplier = genes.speed;
+                let baseHue = genes.hue_start;
+                let style = genes.style;
+                let colorMode = genes.color_mode;
+                let sat = genes.saturation;
+
+                for (let i = 0; i < numLines; i++) {
+                    let angle = i * 0.15 + t * speedMultiplier;
+                    let radius;
+                    let sizeX = 6 + (i * 0.08);
+                    let sizeY = 6 + (i * 0.08);
+
+                    if (style === "spiral") {
+                        radius = (i * 0.7) + p.sin(angle) * 20;
+                    } else if (style === "waves") {
+                        radius = p.sin(angle * 2) * 100;
+                        sizeX = 4 + p.cos(angle) * 10;
+                    } else if (style === "hypnotic_star") {
+                        radius = 80 * p.sin(angle * 4);
+                        sizeY = sizeX * 1.5;
+                    } else { 
+                        radius = 90 + p.cos(angle) * 12;
+                    }
+
+                    let x = p.cos(angle) * radius;
+                    let y = p.sin(angle) * radius;
+                    
+                    let currentHue;
+                    if (colorMode === "rainbow") {
+                        currentHue = (baseHue + (i * 2)) % 360;
+                    } else if (colorMode === "neon_pulse") {
+                        currentHue = (baseHue + p.sin(t * 0.02) * 50) % 360;
+                    } else if (colorMode === "duotone") {
+                        currentHue = i % 2 === 0 ? baseHue : (baseHue + 180) % 360;
+                    } else { 
+                        currentHue = baseHue;
+                    }
+
+                    p.stroke(currentHue, sat, 95, 80);
+                    
+                    if (style === "hypnotic_star") {
+                        p.rect(x, y, sizeX, sizeY);
+                    } else {
+                        p.ellipse(x, y, sizeX, sizeY);
+                    }
+                }
+                t += 1;
+            };
+        };
+    };
+
+    const gallery = document.getElementById('gallery');
+    
+    [...artHistory].reverse().forEach(genes => {
+        const card = document.createElement('div');
+        card.className = 'art-card';
+        
+        // Setup direct mounting target container 
+        const canvasId = `canvas-${genes.id}`;
+        card.innerHTML = `
+            <div class="canvas-container" id="${canvasId}"></div>
+            <div class="info-panel">
+                <div class="gen-title">
+                    <span>Gen #${genes.id}</span>
+                    <span class="badge" style="background: hsl(${genes.hue_start}, 50%, 25%); color: #fff">${genes.style}</span>
+                </div>
+                <div>Palette: <strong>${genes.color_mode}</strong></div>
+                <div>Elements: ${genes.particle_count} | Speed: ${genes.speed}</div>
+            </div>
+        `;
+        gallery.appendChild(card);
+        
+        // Instantiate the sketch immediately inside its target ID element
+        new p5(createArtSketch(genes), canvasId);
+    });
 </script>
 </body>
 </html>

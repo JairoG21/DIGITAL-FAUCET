@@ -9,55 +9,214 @@ if os.path.exists(dna_file):
     with open(dna_file, "r") as f:
         dna = json.load(f)
 else:
-    # Default starter genes
-    dna = {"speed": 0.02, "particle_count": 100, "mutation_rate": 0.1, "hue_start": 180}
+    dna = {"speed": 0.02, "particle_count": 100, "hue_start": 180, "history": []}
 
-# 2. EVOLVE: Mutate the genes slightly for the new day
-dna["speed"] = max(0.005, min(0.1, dna["speed"] + random.uniform(-0.01, 0.01)))
-dna["particle_count"] = max(20, min(500, int(dna["particle_count"] + random.randint(-20, 20))))
-dna["hue_start"] = (dna["hue_start"] + random.randint(-30, 30)) % 360
+if "history" not in dna:
+    dna["history"] = []
 
-# Save the evolved DNA back to memory
+# 2. INTRODUCE VARIATIONS (Mutate drastically)
+dna["speed"] = round(random.uniform(0.01, 0.06), 4)
+dna["particle_count"] = random.randint(40, 180)
+dna["hue_start"] = random.randint(0, 360)
+
+art_styles = ["spiral", "waves", "hypnotic_star", "cosmic_ring"]
+color_modes = ["rainbow", "neon_pulse", "duotone", "monochrome"]
+
+chosen_style = random.choice(art_styles)
+chosen_color = random.choice(color_modes)
+saturation = random.randint(70, 100)
+
+# Save this generation's completely unique traits
+new_generation = {
+    "id": len(dna["history"]) + 1,
+    "particle_count": dna["particle_count"],
+    "speed": dna["speed"],
+    "hue_start": dna["hue_start"],
+    "style": chosen_style,
+    "color_mode": chosen_color,
+    "saturation": saturation,
+    "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+}
+dna["history"].append(new_generation)
+
 with open(dna_file, "w") as f:
     json.dump(dna, f)
 
-# 3. GENERATE THE ART CODE (HTML + p5.js)
+# 3. BUILD THE GALLERY
+js_history_data = json.dumps(dna["history"])
+
+# 4. GENERATE GRID ART WITH FIXED DIMENSIONS (CRASH PROOF)
 html_content = f"""<!DOCTYPE html>
 <html>
 <head>
-    <script src="https://cloudflare.com"></script>
-    <style> body {{ margin: 0; overflow: hidden; background: #050505; }} </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/2.3.2/p5.js"></script>
+    <style>
+        body {{
+            margin: 0;
+            background: #07070a;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: #fff;
+            padding: 30px;
+        }}
+        h1 {{
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }}
+        .subtitle {{
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }}
+        .grid-container {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, 300px);
+            gap: 25px;
+            justify-content: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }}
+        .art-card {{
+            background: #111116;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #22222a;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            width: 300px;
+        }}
+        .canvas-container {{
+            width: 300px;
+            height: 300px;
+            background: #050505;
+        }}
+        .info-panel {{
+            padding: 16px;
+            font-size: 13px;
+            border-top: 1px solid #22222a;
+            background: #14141c;
+            color: #999;
+        }}
+        .gen-title {{
+            font-weight: 700;
+            color: #fff;
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }}
+        .badge {{
+            background: #2a2a3a;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }}
+    </style>
 </head>
 <body>
-<script>
-    let t = 0;
-    function setup() {{
-        createCanvas(windowWidth, windowHeight);
-        strokeWeight(2);
-        noFill();
-    }}
-    function draw() {{
-        background(5, 20); // Creates a trailing blur effect
-        translate(width / 2, height / 2);
-        
-        // Visual variables driven entirely by the agent's evolved DNA
-        let numLines = {dna['particle_count']};
-        let speedMultiplier = {dna['speed']};
-        let baseHue = {dna['hue_start']};
 
-        for (let i = 0; i < numLines; i++) {{
-            let angle = i * 0.1 + t * speedMultiplier;
-            let radius = sin(angle) * (width * 0.3) + (i * 0.5);
-            let x = cos(angle) * radius;
-            let y = sin(angle) * radius;
+    <h1>🧬 Evolving Agentic Art Museum</h1>
+    <div class="subtitle">Run python agent.py to birth a completely unpredictable new generation</div>
+    <div class="grid-container" id="gallery"></div>
+
+<script>
+    const artHistory = {js_history_data};
+
+    const createArtSketch = (genes) => {{
+        return function(p) {{
+            let t = 0;
             
-            // Shifting colors dynamically based on DNA
-            stroke((baseHue + i) % 360, 80, 90);
-            ellipse(x, y, 10 + (i * 0.2));
-        }}
-        t += 1;
-    }}
-    function windowResized() {{ resizeCanvas(windowWidth, windowHeight); }}
+            p.setup = function() {{
+                // Explicit sizes remove layout load failures entirely
+                p.createCanvas(300, 300);
+                p.strokeWeight(1.5);
+                p.noFill();
+                p.colorMode("HSB", 360, 100, 100, 100);
+            }};
+
+            p.draw = function() {{
+                p.background(7, 7, 10, 12);
+                p.translate(150, 150); // Direct center of 300x300
+
+                let numLines = genes.particle_count;
+                let speedMultiplier = genes.speed;
+                let baseHue = genes.hue_start;
+                let style = genes.style;
+                let colorMode = genes.color_mode;
+                let sat = genes.saturation;
+
+                for (let i = 0; i < numLines; i++) {{
+                    let angle = i * 0.15 + t * speedMultiplier;
+                    let radius;
+                    let sizeX = 6 + (i * 0.08);
+                    let sizeY = 6 + (i * 0.08);
+
+                    if (style === "spiral") {{
+                        radius = (i * 0.7) + p.sin(angle) * 20;
+                    }} else if (style === "waves") {{
+                        radius = p.sin(angle * 2) * 100;
+                        sizeX = 4 + p.cos(angle) * 10;
+                    }} else if (style === "hypnotic_star") {{
+                        radius = 80 * p.sin(angle * 4);
+                        sizeY = sizeX * 1.5;
+                    }} else {{ 
+                        radius = 90 + p.cos(angle) * 12;
+                    }}
+
+                    let x = p.cos(angle) * radius;
+                    let y = p.sin(angle) * radius;
+                    
+                    let currentHue;
+                    if (colorMode === "rainbow") {{
+                        currentHue = (baseHue + (i * 2)) % 360;
+                    }} else if (colorMode === "neon_pulse") {{
+                        currentHue = (baseHue + p.sin(t * 0.02) * 50) % 360;
+                    }} else if (colorMode === "duotone") {{
+                        currentHue = i % 2 === 0 ? baseHue : (baseHue + 180) % 360;
+                    }} else {{ 
+                        currentHue = baseHue;
+                    }}
+
+                    p.stroke(currentHue, sat, 95, 80);
+                    
+                    if (style === "hypnotic_star") {{
+                        p.rect(x, y, sizeX, sizeY);
+                    }} else {{
+                        p.ellipse(x, y, sizeX, sizeY);
+                    }}
+                }}
+                t += 1;
+            }};
+        }};
+    }};
+
+    const gallery = document.getElementById('gallery');
+    
+    [...artHistory].reverse().forEach(genes => {{
+        const card = document.createElement('div');
+        card.className = 'art-card';
+        
+        // Setup direct mounting target container 
+        const canvasId = `canvas-${{genes.id}}`;
+        card.innerHTML = `
+            <div class="canvas-container" id="${{canvasId}}"></div>
+            <div class="info-panel">
+                <div class="gen-title">
+                    <span>Gen #${{genes.id}}</span>
+                    <span class="badge" style="background: hsl(${{genes.hue_start}}, 50%, 25%); color: #fff">${{genes.style}}</span>
+                </div>
+                <div>Palette: <strong>${{genes.color_mode}}</strong></div>
+                <div>Elements: ${{genes.particle_count}} | Speed: ${{genes.speed}}</div>
+            </div>
+        `;
+        gallery.appendChild(card);
+        
+        // Instantiate the sketch immediately inside its target ID element
+        new p5(createArtSketch(genes), canvasId);
+    }});
 </script>
 </body>
 </html>"""
@@ -65,4 +224,5 @@ html_content = f"""<!DOCTYPE html>
 with open("index.html", "w") as f:
     f.write(html_content)
 
-print(f"[{datetime.now()}] Art evolved successfully! Particles: {dna['particle_count']}, Speed: {dna['speed']:.4f}")
+print(f"🧬 New Variant Spawned! Gen #{len(dna['history'])} | Style: {chosen_style} | Colors: {chosen_color}")
+
